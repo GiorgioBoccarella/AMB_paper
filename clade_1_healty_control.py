@@ -2,7 +2,7 @@ import numpy as np
 from scipy.integrate import odeint
 import matplotlib.pyplot as plt
 
-which_clade = 3
+which_clade = 1
 
 clades = {
     1: {"KG": 0.219692291518742, "MIC_S": 1},
@@ -28,18 +28,19 @@ length_experiment = 24 * 8
 t = np.linspace(0, length_experiment, length_experiment)
 
 data = {
-    "3": [
-        {"strain": "WT", "RR": 1, "GR": 1},
-        {"strain": "12", "RR": 4, "GR": 0.659616797346785},
-        {"strain": "14", "RR": 2, "GR": 0.640054869512626},
-        {"strain": "15", "RR": 4, "GR": 1.06653052789603},
-        {"strain": "16", "RR": 2, "GR": 0.789895201102259},
-        {"strain": "17", "RR": 4, "GR": 0.999246852192624},
-        {"strain": "ERG11", "RR": 2.3, "GR": 0.67},
-        {"strain": "ERG3Δ", "RR": 2, "GR": 0.830729324414057},
-        {"strain": "ERG6Δ", "RR": 4, "GR": 0.830393583316409},
-        {"strain": "NCP1Δ", "RR": 2, "GR": 0.769941284871208},
-    ],
+    "1": [
+        {"strain": "(WT)", "RR": 1, "GR": 1},
+        {"strain": "2", "RR": 2, "GR": 0.841221715128857},
+        {"strain": "3", "RR": 2, "GR": 0.771876678864167},
+        {"strain": "4", "RR": 2, "GR": 0.804271876889492},
+        {"strain": "5", "RR": 4, "GR": 0.408187499154786},
+        {"strain": "NCP1Δ", "RR": 2, "GR": 0.35},
+        {"strain": "6", "RR": 4, "GR": 0.841141582744544},
+        {"strain": "7", "RR": 4, "GR": 0.7031713491756},
+        {"strain": "8", "RR": 4, "GR": 0.572785650873859},
+        {"strain": "9", "RR": 2, "GR": 0.526297598170203},
+        {"strain": "ERG6Δ", "RR": 4, "GR": 0.674226828608872},
+    ]
 }
 
 
@@ -62,6 +63,7 @@ def model(y, t, params, f_A, E_max):
     
     MIC_R = MIC_R * MIC_S # MIC for resistant cells
 
+    # Subpopulations
     dSdt = S*(1-((S+RA)/10**Bmax))*KG*(1- ((1 - Gmin_A/KG)*(A/MIC_S)**HILL_A/((A/MIC_S)**HILL_A - (Gmin_A/KG)))) - jN*S*E
     dRAdt = RA*(1-((S+RA)/10**Bmax))*KG*FIT*(1- ((1 - Gmin_A/(KG*FIT))*(A/MIC_R)**HILL_A/((A/MIC_R)**HILL_A - (Gmin_A/(KG*FIT))))) - jN*RA*E
     dAdt = f_A
@@ -70,12 +72,11 @@ def model(y, t, params, f_A, E_max):
     return [dSdt, dRAdt, dAdt, dEdt]
 
 
-
 fig, ax = plt.subplots(figsize=(11, 8))
 
-E_max_values = [4*10**4, 10**(4.98)]
-titles = ['Extinction boundary NP-2', 'Extinction boundary NP-1', 'Extinction boundary NP-3']
-fmt_dict = {4*10**4: 'NP-1', 10**(4.98): 'NP-2'}
+E_max_values = [10**6]
+titles = ['Extinction boundary NP-4']
+fmt_dict = {10**6: 'NP-4'}
 
 for idx, E_max in enumerate(E_max_values):
     num_resistant_cells = np.zeros((len(fit_range), len(MIC_R_range)))
@@ -118,37 +119,39 @@ for idx, E_max in enumerate(E_max_values):
             else:
                 num_resistant_cells[i, j] = np.log10(solution[-1][1])
 
-    if E_max == 10**(4.98):  # Color mapping for NP-2
+    if E_max == 10**6:  # Color mapping for NP-1
         cmap = plt.cm.get_cmap('viridis').copy()
         cmap.set_under(color=(232/255, 236/255, 241/255, 0.3))
-        cax = ax.contourf(MIC_R_range, fit_range, num_resistant_cells, cmap=cmap, vmin=2.9, vmax=9, alpha=0.8)
-        cbar = fig.colorbar(cax, ax=ax, ticks=[0, 2.9, 5, 6, 7.5, 9])
+        cax = ax.contourf(MIC_R_range, fit_range, num_resistant_cells, cmap=cmap, vmin=3, vmax=9, alpha=0.8)
+        cbar = fig.colorbar(cax, ax=ax, ticks=[0, 3, 4.5, 6, 7.5, 9])
         cbar.set_label('Log10 (Number of cells)', fontsize=26)
         cbar.ax.tick_params(labelsize=24)
         ax.tick_params(axis='both', which='major', labelsize=28)
         ax.get_xaxis().set_major_formatter(plt.ScalarFormatter())
-        # draw extinction boundary for NP-2
+        # draw extinction boundary for NP-1
         extinction_boundary = ax.contour(MIC_R_range, fit_range, num_resistant_cells, levels=[3], colors='black', linewidths=2.5, alpha=0.8, linestyles='dashed')
         if extinction_boundary.collections:
             ax.clabel(extinction_boundary, inline=True, fontsize=20, fmt={3: fmt_dict[E_max]})
-    else:  # Only line boundary for NP-1 and NP-3
-        extinction_boundary = ax.contour(MIC_R_range, fit_range, num_resistant_cells, levels=[3], colors='black', linewidths=2.5, alpha=0.8, linestyles='dashed')
+    else:  # Only line boundary for NP-2 and NP-3
+        extinction_boundary = ax.contour(MIC_R_range, fit_range, num_resistant_cells, levels=[3], colors='black', linewidths=2.5, alpha=0.8, linestyles = 'dashed')
         if extinction_boundary.collections:
             ax.clabel(extinction_boundary, inline=True, fontsize=20, fmt={3: fmt_dict[E_max]})
 
-ax.set_title(f'Clade III', fontsize=37)
+ax.set_title(f'Clade I', fontsize=37)
 ax.set_xlabel('RR (MIC50)', fontsize=35)
 ax.set_ylabel('GR(µ max)', fontsize=35)
 
-for strain_data in data[str(which_clade)]:
+texts = []
+
+for i, strain_data in enumerate(data[str(which_clade)]):
     x = strain_data['RR']
     y = strain_data['GR']
     label = strain_data['strain']
-    if label == "NCP1Δ" or label == "ERG6Δ" or label == "HGM1":
-        ax.scatter(x, y, color='black', zorder=10, s=120, marker='s', alpha=0.7)
+    if label == "NCP1Δ" or label == "ERG6Δ":
+        ax.scatter(x, y, color='black', zorder=10, s=120, marker='s', alpha=0.7)  # Adjusted size
     else:
-        ax.scatter(x, y, color='black', zorder=10, s=120, alpha=0.8)
+        ax.scatter(x, y, color='black', zorder=10, s=120, alpha=0.8)  # Adjusted size
 
 plt.tight_layout()
-plt.savefig(f'main_plot/clade_{which_clade}.svg', dpi=700)
-plt.savefig(f'main_plot/clade_{which_clade}.png', dpi=700)
+plt.savefig(f'main_plot/clade_{which_clade}_control.svg', dpi=700)
+plt.savefig(f'main_plot/clade_{which_clade}_control.png', dpi=700)
